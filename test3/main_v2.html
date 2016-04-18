@@ -41,7 +41,7 @@ input {
     <label for="yDev" style="display: inline-block; width: 240px;">
        y Deviation = <span id="yDev-value">0</span>
     </label>
-    <input type="range" min="0" max="3" value='.1' step='.05' id="yDev" style='float:left'>
+    <input type="range" min="0" max="3" value='1' step='.05' id="yDev" style='float:left'>
   </p>
   <p>
     <label for="rad" style="display: inline-block; width: 240px;">
@@ -55,7 +55,7 @@ input {
     </label>
     <input type="range" min="0" max="2.99" value='.5' step='.1' id="coVar" style='float:left'>
   </p>
-
+<!-- but... covariance should be limited to xdev*ydev  -->
 <script>
   //  var M = m4th.matrix;
     function updateXDevSlider(val) { //select the span inside of the label,
@@ -76,6 +76,10 @@ input {
     function updateCoVarSlider(val) {
       d3.select('#coVar-value')
         .text(val);
+      var xval = +d3.select('#xDev-value').text();
+      var yval = +d3.select('#yDev-value').text();
+      var maxVal = xval * yval;
+      d3.select('#coVar').attr('max', maxVal)
     };
 //e
     function updateData(newData) {   //
