@@ -1,0 +1,220 @@
+<html>
+
+<script src='d3.min.js'></script>
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.dot {
+//  stroke: #000;
+//  r: 4;
+  opacity: .1;
+}
+
+input {
+  margin-left: 50;
+}
+
+</style>
+<body>
+
+  <h1> Bivariate Distribution </h1>
+  <svg id='graphic'></svg>
+  <p>
+    <label for="xDev" style="display: inline-block; width: 240px;">
+       x Deviation = <span id="xDev-value">0</span>
+    </label>
+    <input type="range" min="0" max="3" value='1' step='.05' id="xDev" style='float:left'>
+  </p>
+  <p>
+    <label for="yDev" style="display: inline-block; width: 240px;">
+       y Deviation = <span id="yDev-value">0</span>
+    </label>
+    <input type="range" min="0" max="3" value='.1' step='.05' id="yDev" style='float:left'>
+  </p>
+  <p>
+    <label for="rad" style="display: inline-block; width: 240px;">
+       Radius = <span id="rad-value">0</span>
+    </label>
+    <input type="range" min="2" max="10" value='4' step='.5' id="rad" style='float:left'>
+  </p>
+
+<script>
+
+    function updateXDevSlider(val) { //select the span inside of the label,
+                                    //update to new value
+      d3.select('#xDev-value')
+        .text(val);
+    };
+    function updateYDevSlider(val) {
+      d3.select('#yDev-value')
+        .text(val);
+    };
+  function updateRadiusSlider(val) {
+    d3.select('#rad-value')
+      .text(val);
+    };
+//e
+    function updateData(newData) {   //
+      var dots = svg.selectAll(".dot")
+          .data(newData);
+
+      dots
+        .transition().duration(500)  //yay cool animations
+          .attr("cx", function(d) {return x(d.x); })
+          .attr("cy", function(d) {return y(d.y); })
+    };
+    function updateXData(deviation) { //Takes in a new sigma, resamples all
+                                      // x values (but leaves y the same)
+
+      var newGauss = d3.random.normal(0, deviation);
+
+      data.forEach(function(d) {
+        d.x = newGauss();
+      });
+
+      updateData(data);
+    };
+    function updateYData(deviation) {
+
+      var newGauss = d3.random.normal(0, deviation);
+
+      data.forEach(function(d) {
+        d.y = newGauss();
+      });
+
+      updateData(data);
+    };
+
+    function updateDisplayRadius(radius) {
+       var dots = svg.selectAll(".dot").attr("r",radius);
+
+    };
+
+    d3.select("#xDev").on("input", function() {
+      updateXDevSlider(+this.value);
+    });
+    d3.select("#xDev").on("change", function() {
+      updateXDevSlider(+this.value);
+      updateXData(+this.value);
+    });
+    d3.select("#yDev").on("input", function() {
+      updateYDevSlider(+this.value);
+    });
+    d3.select("#yDev").on("change", function() {
+      updateYDevSlider(+this.value);
+      updateYData(+this.value);
+    });
+    d3.select("#rad").on("input", function() {
+      updateRadiusSlider(+this.value);
+    });
+    d3.select("#rad").on("change", function() {
+      updateRadiusSlider(+this.value);
+      updateDisplayRadius(+this.value);
+    });
+
+    var xInit = 1; //variance
+    var yInit = .1;
+    var radInit = 4;
+    var numDots = 1000;
+
+    updateXDevSlider(xInit); // initialize
+    updateYDevSlider(yInit);
+    updateRadiusSlider(radInit);
+
+    var start = new Date().getTime();
+    var data = d3.range(0,numDots);
+    var gaussianX = d3.random.normal(0, xInit);
+    var gaussianY = d3.random.normal(0, yInit); //returns a function()
+
+//    console.log(gaussianX () );
+
+    data = data.map(function(d) { //for each eleement in d, return a value
+                                  //sampled from gaussianX/Y
+      return {
+        x: gaussianX(),
+        y: gaussianY()
+      };
+    });
+
+//    console.log(new Date().getTime() - start);
+
+    var displayRange = [-10, 10];
+    var margin = {top: 20, right: 20, bottom: 40, left: 40},
+        width = 400 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+
+    var x = d3.scale.linear() //linear functions that map from axis space into
+                              //pixel space
+        .domain(displayRange)
+        .range([0, width]);
+
+    var y = d3.scale.linear()
+        .domain(displayRange)
+        .range([height, 0]);
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left");
+
+    var svg = d3.select('#graphic')
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+      .append("text")
+        .attr("class", "label")
+        .attr("x", width)
+        .attr("y", -6)
+        .style("text-anchor", "end")
+        .text("X Axis "); //Label axes??
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+      .append("text")
+        .attr("class", "label")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("Y Axis")
+
+    svg.selectAll(".dot")
+        .data(data)
+      .enter().append("circle") //enter::for each (of the new data)
+                                // append a circle (radius set in style)
+        .attr("class", "dot")   //attr
+        .attr("cx", function(d) {return x(d.x); })
+        //remember to map to pixel space!!!!!
+        .attr("cy", function(d) {return y(d.y); })
+        .attr("r", 4)
+        .style("fill", 'blue');
+
+  //  d3.select('body')
+  //      .append('range')
+  //      .attr('id', 'xDistSlider')
+  //      .attr('min', 0)
+  //      .attr('max', 1);
+
+</script>
+</body>
+</html>
