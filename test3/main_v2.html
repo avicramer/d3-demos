@@ -1,7 +1,7 @@
 <html>
 
 <script src='d3.min.js'></script>
-<script src='vectorious-4.3.2.min.js'></script>
+<script src='vectorious-4.3.2.min.js'></script> <!--math library -->
 <!-- <script src="http://mlweb.loria.fr/lalolib.js"></script> -->
 <style>
 
@@ -93,7 +93,9 @@ input {
           .attr("cy", function(d) {return y(d.y); })
     };
     function updateXData(covariance, x1dev, x2dev) { //Takes in a new sigma, resamples all
-                                      // x values (but leaves y the same)
+                                      // x values (but leaves y the same)-- not any more
+                                      // resamples any time anything changes
+                                      //in order to account for covariance
       var newGaussX1 = d3.random.normal(0, x1dev);
       var newGaussX2 = d3.random.normal(0, x2dev);
       var rho = covariance/(x1dev*x2dev);
@@ -102,10 +104,10 @@ input {
       data.forEach(function(d) {
         d.x = newGaussX1();
         d.y = rho*d.x + rho2*newGaussX2();
-
       });
 
       updateData(data);
+
     };
     function updateYData(covariance, x1dev, x2dev) {
       var newGaussX1 = d3.random.normal(0, x1dev);
@@ -124,7 +126,6 @@ input {
 
     function updateDisplayRadius(radius) {
        var dots = svg.selectAll(".dot").attr("r",radius);
-
     };
 
     function updateCoVarData(covariance, x1dev, x2dev) {
@@ -136,7 +137,6 @@ input {
       data.forEach(function(d) {
         d.x = newGaussX1();
         d.y = rho*d.x + rho2*newGaussX2();
-
       });
 
       updateData(data);
@@ -146,14 +146,17 @@ input {
     d3.select("#xDev").on("input", function() {
       updateXDevSlider(+this.value);
     });
+
     d3.select("#xDev").on("change", function() {
       updateXDevSlider(+this.value);
       var covariance = d3.select('#coVar-value');
       var x2dev = d3.select('#yDev-value');
       updateXData(+covariance[0][0].textContent,+this.value,+x2dev[0][0].textContent);
+
     });
     d3.select("#yDev").on("input", function() {
       updateYDevSlider(+this.value);
+
     });
     d3.select("#yDev").on("change", function() {
       updateYDevSlider(+this.value);
@@ -185,7 +188,9 @@ input {
     var numDots = 500;
     var coVarInit = .5;
 //    var coVarMat = new Matrix([[xInit, coVarInit],[coVarInit, yInit ]]);
-  //  var UD; //for Cholesky decomp
+  //  var UD; //for Cholesky decomp --> not using this any more
+  //                                    instead calculating correlation from
+  //                                    covariance
     //UD = m4th.ud(coVarMat);
     //console.log(UD);
 //    console.log(coVarMat);
