@@ -1,0 +1,282 @@
+<html>
+<script src='d3.min.js'></script> <!-- data display library -->
+<script src='vectorious-4.3.2.min.js'></script> <!--math library -->
+
+<h1> This is a title </h1>
+<br>
+<a> This is a subtitle <a>
+<br>
+<a> This display is designed to help visualize how changing the covariance of
+  two distributions changes the bivariate distribution. X and Y are randomly
+  sampled gaussian distributions. Note that if the covariance is smaller than
+</a>
+<br>
+  <a> the product of the x and y variances, then the covariance matrix is no longer
+  positive definite. </a>
+<br>
+<br>
+<a> Change the sliders and enjoy! </a>
+<!-- Setting some initial style params -->
+<style>
+
+body {
+  font: 12px serif
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.dot{
+//  opacity: .1;
+}
+
+input {
+  margin-left: 50;
+  clear: both; //fixes formatting error
+}
+
+</style>
+<body>
+<!-- graph title -->
+  <h1> Bivariate Distribution </h1>
+  <svg id='graphic'></svg>
+<!-- axes labels -->
+  <p>
+  <label for="xVar" style="display: inline-block; width: 240px;">
+     X Variance = <span id="xVar-value">0</span> <!--changed in init -->
+  </label>
+  <input type="range" min="0" max="3" value='1' step='.05' id="xVar" style='float:left'>
+<!-- make sure this matches init!! -->
+  </p>
+  <p>
+  <label for="yVar" style="display: inline-block; width: 240px;">
+     Y Variance = <span id="yVar-value">0</span>
+  </label>
+  <input type="range" min="0" max="3" value='1' step='.05' id="yVar" style='float:left'>
+  </p>
+  <p>
+  <label for="coVar" style="display: inline-block; width: 240px;">
+     Covariance = <span id="coVar-value">0</span>
+  </label>
+  <input type="range" min="0" max="3" value='.5' step='.1' id="coVar" style='float:left'>
+  </p>
+<!-- and one more for the radius of the dots -->
+  <br>
+  <br>
+  <p>
+  <label for="rad" style="display: inline-block; width: 240px;">
+     Radius = <span id="rad-value">0</span>
+  </label>
+  <input type="range" min="2" max="10" value='4' step='.5' id="rad" style='float:left'>
+  </p>
+  <p>
+  <label for="opa" style="display: inline-block; width: 240px;">
+     Opacity = <span id="opa-value">.1</span>
+  </label>
+  <input type="range" min="0" max=".3" value='0.1' step='0.01' id="opa" style='float:left'>
+  </p>
+
+<!-- but covariance should be limited to xdev*ydev  -->
+<script>
+// display params
+  var displayRange = [-10, 10];
+  var margin = {top: 20, right: 20, bottom: 40, left: 40},
+      width = 400 - margin.left - margin.right,
+      height = 400 - margin.top - margin.bottom;
+  //declare variable for plotting axes
+  var xScale = d3.scale.linear() //linear functions that map from axis space into
+                              //pixel space
+      .domain(displayRange)
+      .range([0, width]);
+  var yScale = d3.scale.linear()
+      .domain(displayRange)
+      .range([height, 0]);
+  var xAxis = d3.svg.axis()
+      .scale(xScale)
+      .orient("bottom");
+  var yAxis = d3.svg.axis()
+      .scale(yScale)
+      .orient("left");
+  var img = d3.select('#graphic')
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  //finally add the axes
+  img.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("X Axis ");
+
+  img.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("transform","rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "6") //adjusts position of axis label
+      .style("text-anchor", "end")
+      .text("Y Axis ");
+
+  //ok... now to write some functions to update the sliders
+  function updateXVarSlider(val) { //select the span inside of the label,
+                                      //update to new value
+    d3.select('#xVar-value')
+      .text(val);
+  };
+  function updateYVarSlider(val) {
+    d3.select('#yVar-value')
+      .text(val);
+  };
+  function updateRadiusSlider(val) {
+    d3.select('#rad-value')
+      .text(val);
+  };
+  function updateOpacitySlider(val) {
+    d3.select('#opa-value')
+      .text(val);
+  };
+  //changes the maximum allowed value for covariance -> do this for x&y?
+  function updateCoVarSlider(val) {
+    d3.select('#coVar-value')
+      .text(val);
+    var xval = +d3.select('#xVar-value').text();
+    var yval = +d3.select('#yVar-value').text();
+    var maxVal = xval * yval;
+    d3.select('#coVar').attr('max', maxVal)
+  };
+
+  d3.select("#xVar").on("input", function() {
+    updateXVarSlider(+this.value);
+  });
+  d3.select("#yVar").on("input", function() {
+    updateYVarSlider(+this.value);
+  });
+  d3.select("#rad").on("input", function() {
+    updateRadiusSlider(+this.value);
+  });
+  d3.select("#coVar").on("input", function() {
+    updateCoVarSlider(+this.value);
+  });
+  d3.select("#opa").on("input", function() {
+    updateOpacitySlider(+this.value);
+  });
+  function updateData(newData) {   //takes in updated data, moves dots around
+    var dots = img.selectAll(".dot")
+      .data(newData);
+    dots
+      .transition().duration(1000)  //yay cool animations
+        .attr("cx", function(d) {return xScale(d.x); })
+        .attr("cy", function(d) {return yScale(d.y); })
+  };
+  function updateDataVals(covariance, x1dev, x2dev) { //Takes in a new sigma, resamples all
+                                  // x values (but leaves y the same)-- not any more
+                                  // resamples any time anything changes
+                                  //in order to account for covariance
+    var newGaussX1 = d3.random.normal(0, x1dev);
+    var newGaussX2 = d3.random.normal(0, x2dev);
+    var rho = covariance/(x1dev*x2dev);
+    var rho2 = Math.sqrt(1 - rho * rho);  //rho is the correlation
+    data.forEach(function(d) {
+      d.x = newGaussX1();
+      d.y = rho*d.x + rho2*newGaussX2();
+    });
+    updateData(data);
+  };
+  function updateDisplayRadius(radius) {
+   var dots = img.selectAll(".dot").attr("r",radius);
+  };
+  function updateDisplayOpacity(opacity) {
+   var dots = img.selectAll(".dot").attr("opacity",opacity);
+  };
+
+
+
+  d3.select("#xVar").on("change", function() {
+    updateXVarSlider(+this.value);
+    var covariance = d3.select('#coVar-value');
+    var x2var = d3.select('#yVar-value');
+    updateDataVals(+covariance[0][0].textContent,+this.value,+x2var[0][0].textContent);
+    });
+
+  d3.select("#yVar").on("change", function() {
+    updateYVarSlider(+this.value);
+    var x1var = d3.select('#xVar-value');
+    var covariance = d3.select('#coVar-value');
+    updateDataVals(+covariance[0][0].textContent,+x1var[0][0].textContent,+this.value);
+    });
+
+  d3.select("#coVar").on("change", function() {
+    updateCoVarSlider(+this.value);
+    var x1var = d3.select('#xVar-value');
+    var x2var = d3.select('#yVar-value');
+    updateDataVals(+this.value,+x1var[0][0].textContent,+x2var[0][0].textContent)
+    });
+
+  //add oppacity?
+  d3.select("#rad").on("change", function() {
+    updateRadiusSlider(+this.value);
+    updateDisplayRadius(+this.value);
+    });
+  d3.select("#opa").on("change", function() {
+    updateOpacitySlider(+this.value);
+    updateDisplayOpacity(+this.value);
+    });
+
+ // inits
+  var xInit = 1; //variance
+  var yInit = 1;
+  var radInit = 4;
+  var numDots = 1000;
+  var coVarInit = .5;
+  var opaInit = 0.1;
+  var rhoInit = coVarInit / (xInit * yInit);
+  var rho2 = Math.sqrt(1-rhoInit*rhoInit);
+  var data = d3.range(0,numDots);
+  var gaussianX = d3.random.normal(0, xInit);
+  var gaussianY = d3.random.normal(0, yInit);
+
+  updateXVarSlider(xInit); // initialize
+  updateYVarSlider(yInit);
+  updateCoVarSlider(coVarInit);
+  updateRadiusSlider(radInit);
+  updateOpacitySlider(opaInit);
+
+  data = data.map(function(d) { //for each eleement in d, return a value
+                              //sampled from gaussianX/Y
+    var x1 = gaussianX();
+    var x2 = gaussianY();
+
+    return {
+      x: x1,
+      y: rhoInit * x1 + rho2*x2
+    };
+  });
+
+  img.selectAll(".dot")
+    .data(data)
+    .enter().append("circle") //enter::for each (of the new data)
+                            // append a circle (radius set in style)
+      .attr("class", "dot")   //attr
+      .attr("opacity",0.1)
+      .attr("cx", function(d) {return xScale(d.x); })
+    //remember to map to pixel space!!!!!
+      .attr("cy", function(d) {return yScale(d.y); })
+      .attr("r", 4)
+        .style("fill", 'blue');
+
+
+
+</script>
+</body>
+</html>

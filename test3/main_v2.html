@@ -102,7 +102,6 @@ input {
     function updateData(newData) {   //
       var dots = svg.selectAll(".dot")
           .data(newData);
-
       dots
         .transition().duration(500)  //yay cool animations
           .attr("cx", function(d) {return x(d.x); })
